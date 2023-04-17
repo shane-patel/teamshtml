@@ -1,0 +1,86 @@
+<html>
+<!-- JQuery include -->
+<script
+  src="https://code.jquery.com/jquery-3.6.3.min.js"
+  integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+  crossorigin="anonymous"></script>
+  
+<script src="teamsHelper.js" crossorigin="anonymous"></script>
+<!-- Microsoft Teams JavaScript API (via CDN) -->
+<script
+  src="https://res.cdn.office.net/teams-js/2.9.1/js/MicrosoftTeams.min.js"
+  integrity="sha384-xnsUQ1tUqsrutBJl0vuf4/hufzLFWW8ZhGnhItfpQ0/BtWgM2uw6YT6BQ5YaKBSM"
+  crossorigin="anonymous"></script>
+  
+<script type="text/javascript">
+	
+	// Helper function to ensure that the Teams SDK is initialized once no matter how often this is called
+	let teamsInitPromise;
+	function ensureTeamsSdkInitialized() 
+	{
+		if (!teamsInitPromise) {
+			teamsInitPromise = microsoftTeams.app.initialize();
+		}
+		return teamsInitPromise;
+	}
+	// Helper function to ensure that the Teams SDK is being used in Teams/Office/Outlook
+	async function inTeams() {
+		try {
+			await ensureTeamsSdkInitialized();
+			const context = await microsoftTeams.app.getContext();
+			if (context.app.host.name === microsoftTeams.HostName.teams){
+			console.log("Running in Teams");
+				return true;
+			}
+			if (context.app.host.name === microsoftTeams.HostName.office){
+				console.log("Running in Office 365");
+				return true;
+			}
+			if (context.app.host.name === microsoftTeams.HostName.outlook){
+				console.log("Running in Outlook");
+				return true;
+			}
+		}
+		catch (e) {
+		console.log(e, " from Teams SDK, may be running outside of Teams");    
+			return false;
+		}
+	}
+	//call notify success when login is successful
+	async function login()
+	{
+		console.log("Calling notifySuccess() function...");
+		let key = "simple.result";
+		await ensureTeamsSdkInitialized();
+		microsoftTeams.authentication.notifySuccess();
+	}
+	//call notify failure when login failed or perhaps there was a problem with the popup window
+	async function fail()
+	{
+		console.log("Calling notifyFailure() function...");
+		let key = "simple.result";
+		await ensureTeamsSdkInitialized();
+		microsoftTeams.authentication.notifyFailure("Unable to login");
+	}  
+	//check if SDK is running in an Office app and if so, display in a label
+	$(document).ready(function(){
+		if (inTeams()){
+			$('#host').text('Page is being displayed within a Microsoft App');
+		}
+		else {
+			$('#host').text('Page is being displayed outside of a Microsoft App');
+		}
+		
+	});
+</script>
+<body>
+	My Cool Sign-In Page
+	<br/><br/>
+	Username: <input type="text"></text><br/>
+	Password: <input type="password"> </text><br/><br/>
+	<button type="button" onclick="login();">Log in</button>
+	<button type="button" onclick="fail();">Fail Log in</button>
+	<br/><br/><br/>
+	<label id="host" name="host" style="color:blue;font-weight:700;"></label>
+</body>
+</html>

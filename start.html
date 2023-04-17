@@ -1,0 +1,98 @@
+<html>
+<!-- JQuery include -->
+<script src="https://code.jquery.com/jquery-3.6.3.min.js"
+  integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+  crossorigin="anonymous"></script>
+  
+<!-- Microsoft Teams JavaScript API (via CDN) -->
+<script src="https://res.cdn.office.net/teams-js/2.9.1/js/MicrosoftTeams.min.js"
+  integrity="sha384-xnsUQ1tUqsrutBJl0vuf4/hufzLFWW8ZhGnhItfpQ0/BtWgM2uw6YT6BQ5YaKBSM"
+  crossorigin="anonymous"></script>
+  
+<script type="text/javascript">
+	
+	// Helper function to ensure that the Teams SDK is initialized once no matter how often this is called
+	let teamsInitPromise;
+	function ensureTeamsSdkInitialized() 
+	{
+		if (!teamsInitPromise) 
+		{
+			teamsInitPromise = microsoftTeams.app.initialize();
+			
+		}
+		return teamsInitPromise;
+	}
+	// Helper function to ensure that the Teams SDK is being used in Teams/Office/Outlook
+	async function inTeams() {
+		console.log("Checking if running inside Teams");
+		try {
+			await ensureTeamsSdkInitialized();
+			if(microsoftTeams.app.isInitialized())
+			{
+				const context = await microsoftTeams.app.getContext();
+				console.log(context.app.host.name);
+				if (context.app.host.name === microsoftTeams.HostName.teams){
+					$('#host').text('Page is being displayed within Teams');
+					return true;
+				}
+				if (context.app.host.name === microsoftTeams.HostName.office){
+					$('#host').text('Page is being displayed within Office 365');
+					return true;
+				}
+				if (context.app.host.name === microsoftTeams.HostName.outlook){
+					$('#host').text('Page is being displayed within Outlook');
+					return true;
+				}
+			}
+			else
+			{
+				$('#host').text('Page is being displayed outside a Microsoft App');
+			}
+		}
+		catch (e) {
+			$('#host').text('Page is being displayed outside a Microsoft App');
+			console.error("Exception: ", e);    
+			return false;
+		}
+	}
+	// function to call popup window to handle authentication - Teams is aware of the external window when using authentication.authenticate()
+	async function teamsAuthInit() 
+	{
+		console.log("Initializing Teams Auth SDK...");
+		await ensureTeamsSdkInitialized();
+		if(microsoftTeams.app.isInitialized())
+		{
+			microsoftTeams.authentication.authenticate({
+				//url: window.location.origin + "/teams/login.html",
+				url: "https://embed.aaiengineering.com",
+				width: 600,
+				height: 550})
+			.then((result) => {
+				console.log("Login succeeded: " + result);
+				window.location.assign(window.location.origin + "/teams/copilot.html");
+			})
+			.catch((reason) => {
+				console.log("Login failed: " + reason);
+				console.log("Login was blocked by popup blocker or canceled by user.");
+				document.getElementById('failuremsg').innerHTML = 'Login Failed';
+			});
+		}
+	}
+	//call auth popup on document ready
+	$(document).ready(function(){
+		inTeams();
+		teamsAuthInit();
+	});
+
+</script>
+
+<body>
+	<h1 style="color:#1E6ADE;"> Signing in to Automation Anywhere...</h1>
+	<br/><br/><br/>
+	<button id="btn" name="btn" onclick="teamsAuthInit()">Reload Authentication Window</button>
+	<br/><br/>
+	<label id="host" style="color:blue;font-weight:700;" name="host"></label>
+	<br/><br/>
+	<label id="failuremsg" style="color:red;font-weight:700;"></label>
+</body>
+</html>
